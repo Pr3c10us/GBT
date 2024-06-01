@@ -1,0 +1,5 @@
+ALTER TABLE credits
+    ALTER COLUMN amount TYPE INT;
+
+ALTER TABLE debts
+    ALTER COLUMN amount TYPE INT;

@@ -1,0 +1,5 @@
+ALTER TABLE credits
+    ALTER COLUMN amount TYPE FLOAT;
+
+ALTER TABLE debts
+    ALTER COLUMN amount TYPE FLOAT;
