@@ -29,6 +29,8 @@ func getErrorMessage(fieldError validator.FieldError) string {
 		return "Should be less than " + fieldError.Param()
 	case "gte":
 		return "Should be greater than " + fieldError.Param()
+	case "uuid":
+		return "Provide valid uuid"
 	}
 	return "Unknown error"
 }

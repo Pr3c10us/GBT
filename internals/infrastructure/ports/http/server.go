@@ -64,6 +64,7 @@ func (server *Server) Debtors() {
 	route := server.engine.Group("/api/v1/debtors")
 	{
 		route.POST("/", handler.AddDebtor)
+		route.DELETE("/:id", handler.RemoveDebtor)
 	}
 }
 
