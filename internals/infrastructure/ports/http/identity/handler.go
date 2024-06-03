@@ -60,7 +60,7 @@ func (handler *Handler) Authentication(context *gin.Context) {
 		return
 	}
 
-	token, err := utils.CreateTokenFromUser(&user, handler.environmentVariables.JWTSecret)
+	token, err := utils.CreateTokenFromUser(user, handler.environmentVariables.JWTSecret)
 	if err != nil {
 		_ = context.Error(err)
 		return

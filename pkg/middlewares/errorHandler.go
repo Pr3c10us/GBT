@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	"go.uber.org/zap"
+	"log"
 	"net/http"
 )
 
@@ -26,11 +27,26 @@ func ErrorHandlerMiddleware(logger logger.Logger) gin.HandlerFunc {
 			switch {
 			case errors.As(err.Err, &pqErr):
 				{
-					switch pqErr.Code.Name() {
-					case "unique_violation":
+					log.Print(pqErr.Code.Name())
+					switch pqErr.Code {
+					case "23505":
 						response.ErrorResponse{
 							StatusCode:   http.StatusConflict,
 							Message:      "unique key value violated",
+							ErrorMessage: pqErr.Detail,
+						}.Send(c)
+						return
+					case "22P02":
+						response.ErrorResponse{
+							StatusCode:   http.StatusBadRequest,
+							Message:      "invalid argument syntax",
+							ErrorMessage: pqErr.Message,
+						}.Send(c)
+						return
+					case "23503":
+						response.ErrorResponse{
+							StatusCode:   http.StatusBadRequest,
+							Message:      "invalid foreign key identifier",
 							ErrorMessage: pqErr.Detail,
 						}.Send(c)
 						return

@@ -73,7 +73,7 @@ func Test_authenticateUserQuery_Handle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(identity.MockRepository)
-			mockRepo.On("GetUser", tt.args.username).Return(tt.want, tt.ExpectedErr)
+			mockRepo.On("GetUser", tt.args.username).Return(&tt.want, tt.ExpectedErr)
 			query := &authenticateUserQuery{
 				repository: mockRepo,
 			}
@@ -82,7 +82,7 @@ func Test_authenticateUserQuery_Handle(t *testing.T) {
 				assert.Equal(t, tt.ExpectedErr, err)
 			} else {
 				assert.Equal(t, tt.ExpectedErr, err)
-				assert.Equal(t, tt.want, user)
+				assert.Equal(t, tt.want, *user)
 			}
 		})
 	}

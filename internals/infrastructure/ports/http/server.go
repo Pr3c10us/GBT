@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/Pr3c10us/gbt/internals/app"
+	"github.com/Pr3c10us/gbt/internals/infrastructure/ports/http/debtors"
 	"github.com/Pr3c10us/gbt/internals/infrastructure/ports/http/identity"
 	"github.com/Pr3c10us/gbt/pkg/configs"
 	"github.com/Pr3c10us/gbt/pkg/logger"
@@ -37,17 +38,18 @@ func NewServer(services app.Services, sugaredLogger logger.Logger) Server {
 
 	server.Health()
 	server.Identity()
+	server.Debtors()
 
 	return server
 }
 
-func (server Server) Health() {
+func (server *Server) Health() {
 	server.engine.GET("/health", func(c *gin.Context) {
 		response.NewSuccessResponse(nil, nil).Send(c)
 	})
 }
 
-func (server Server) Identity() {
+func (server *Server) Identity() {
 	handler := identity.NewIdentityHandler(server.services.IdentityService, environmentVariables)
 	route := server.engine.Group("/api/v1/identity")
 	{
@@ -57,7 +59,15 @@ func (server Server) Identity() {
 	}
 }
 
-func (server Server) Run() {
+func (server *Server) Debtors() {
+	handler := debtors.NewDebtorsHandler(server.services.DebtorServices)
+	route := server.engine.Group("/api/v1/debtors")
+	{
+		route.POST("/", handler.AddDebtor)
+	}
+}
+
+func (server *Server) Run() {
 	err := server.engine.Run(environmentVariables.Port)
 	if err != nil {
 		panic("Failed to start server")

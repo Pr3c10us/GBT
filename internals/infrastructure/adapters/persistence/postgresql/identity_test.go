@@ -1,15 +1,13 @@
 package postgresql
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/Pr3c10us/gbt/internals/domain/identity"
 	"github.com/Pr3c10us/gbt/pkg/appError"
 	"github.com/Pr3c10us/gbt/pkg/logger"
+	"github.com/Pr3c10us/gbt/pkg/utils"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"regexp"
 	"testing"
@@ -18,16 +16,6 @@ import (
 var (
 	sugarLogger = logger.NewSugarLogger(false)
 )
-
-func NewMock() (*sql.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		message := fmt.Sprintf("an error '%s' was not expected when opening a stub database connection", err)
-		sugarLogger.Log("fatal", message)
-	}
-
-	return db, mock
-}
 
 func Test_postgresqlRepository_CreateUser(t *testing.T) {
 
@@ -63,7 +51,7 @@ func Test_postgresqlRepository_CreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Get mock and mock db conn
-			db, mock := NewMock()
+			db, mock := utils.NewMock()
 			// create new repo with mock db conn
 			repository := &IdentityRepositoryPG{
 				db:     db,
@@ -86,11 +74,9 @@ func Test_postgresqlRepository_CreateUser(t *testing.T) {
 			if tt.wantErr {
 				prep.ExpectExec().
 					WithArgs(tt.user.Username, tt.user.Password, tt.user.SecurityQuestion, tt.user.SecurityAnswer).
-					WillReturnError(&pq.Error{
-						Code:     "23505",
-						Severity: "ERROR",
-						Message:  "duplicate key value violates unique constraint \"username\"",
-						Detail:   "Key (username)=(MrMan) already exists."})
+					WillReturnError(
+						appError.NewPQUniqueError(),
+					)
 			} else {
 				prep.ExpectExec().
 					WithArgs(tt.user.Username, tt.user.Password, tt.user.SecurityQuestion, tt.user.SecurityAnswer).
@@ -146,7 +132,7 @@ func TestIdentityRepositoryPG_GetUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock := NewMock()
+			db, mock := utils.NewMock()
 			repository := &IdentityRepositoryPG{
 				db:     db,
 				logger: sugarLogger,
@@ -171,7 +157,7 @@ func TestIdentityRepositoryPG_GetUser(t *testing.T) {
 
 			user, err := repository.GetUser(tt.args.username)
 			assert.Equal(t, err, tt.expectedErr)
-			assert.Equal(t, tt.want, user)
+			assert.Equal(t, tt.want, *user)
 		})
 	}
 }

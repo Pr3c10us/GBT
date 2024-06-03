@@ -12,7 +12,7 @@ var (
 )
 
 type AuthenticateUserQuery interface {
-	Handle(username string, password string) (identity.User, error)
+	Handle(username string, password string) (*identity.User, error)
 }
 
 type authenticateUserQuery struct {
@@ -25,15 +25,15 @@ func NewAuthenticateUserQuery(repository identity.Repository) AuthenticateUserQu
 	}
 }
 
-func (query *authenticateUserQuery) Handle(username string, password string) (identity.User, error) {
+func (query *authenticateUserQuery) Handle(username string, password string) (*identity.User, error) {
 	user, err := query.repository.GetUser(username)
 	if err != nil {
-		return identity.User{}, err
+		return &identity.User{}, err
 	}
 
 	//	check if password is correct
 	if !utils.IsValidPassword(user.Password, password) {
-		return identity.User{}, appError.BadRequest(IncorrectPasswordErr)
+		return &identity.User{}, appError.BadRequest(IncorrectPasswordErr)
 	}
 
 	return user, nil

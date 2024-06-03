@@ -8,14 +8,8 @@ import (
 	identityRepository "github.com/Pr3c10us/gbt/internals/domain/identity"
 	"github.com/Pr3c10us/gbt/pkg/appError"
 	"github.com/Pr3c10us/gbt/pkg/configs"
-	"github.com/Pr3c10us/gbt/pkg/logger"
-	"github.com/Pr3c10us/gbt/pkg/middlewares"
 	"github.com/Pr3c10us/gbt/pkg/utils"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
@@ -28,15 +22,7 @@ import (
 
 var (
 	environmentVariables = configs.LoadEnvironment()
-	cookieStore          = cookie.NewStore([]byte(environmentVariables.CookieSecret))
 )
-
-func setupRouter() *gin.Engine {
-	r := gin.Default()
-	r.Use(middlewares.ErrorHandlerMiddleware(logger.NewSugarLogger(false)))
-	r.Use(sessions.Sessions("gbt", cookieStore))
-	return r
-}
 
 func TestHandler_Registration(t *testing.T) {
 	tests := []struct {
@@ -75,13 +61,8 @@ func TestHandler_Registration(t *testing.T) {
 				SecurityQuestion: "who strong",
 				SecurityAnswer:   "me",
 			},
-			statusCode: http.StatusConflict,
-			ExpectedErr: &pq.Error{
-				Code:     "23505",
-				Severity: "ERROR",
-				Message:  "duplicate key value violates unique constraint \"username\"",
-				Detail:   "Key (username)=(MrMan) already exists.",
-			},
+			statusCode:  http.StatusConflict,
+			ExpectedErr: appError.NewPQUniqueError(),
 		},
 	}
 	for _, tt := range tests {
@@ -94,7 +75,7 @@ func TestHandler_Registration(t *testing.T) {
 			service := identityService.NewIdentityService(mockRepo)
 			handler := NewIdentityHandler(service, environmentVariables)
 
-			engine := setupRouter()
+			engine := utils.SetupRouter()
 			engine.POST("/api/v1/identity/register", handler.Registration)
 
 			w := httptest.NewRecorder()
@@ -181,12 +162,12 @@ func TestHandler_Authentication(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(identityRepository.MockRepository)
-			mockRepo.On("GetUser", tt.args.Username).Return(tt.want.user, tt.ExpectedErr)
+			mockRepo.On("GetUser", tt.args.Username).Return(&tt.want.user, tt.ExpectedErr)
 
 			service := identityService.NewIdentityService(mockRepo)
 			handler := NewIdentityHandler(service, environmentVariables)
 
-			engine := setupRouter()
+			engine := utils.SetupRouter()
 			engine.POST("/api/v1/identity/authenticate", handler.Authentication)
 
 			w := httptest.NewRecorder()

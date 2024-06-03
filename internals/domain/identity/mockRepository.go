@@ -6,9 +6,9 @@ type MockRepository struct {
 	mock.Mock
 }
 
-func (m *MockRepository) GetUser(username string) (User, error) {
+func (m *MockRepository) GetUser(username string) (*User, error) {
 	args := m.Called(username)
-	return args.Get(0).(User), args.Error(1)
+	return args.Get(0).(*User), args.Error(1)
 }
 
 func (m *MockRepository) CreateUser(user *User) error {

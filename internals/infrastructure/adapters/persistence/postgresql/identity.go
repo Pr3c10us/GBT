@@ -56,32 +56,30 @@ func (repository *IdentityRepositoryPG) CreateUser(user *identity.User) error {
 	return nil
 }
 
-func (repository *IdentityRepositoryPG) GetUser(username string) (identity.User, error) {
+func (repository *IdentityRepositoryPG) GetUser(username string) (*identity.User, error) {
 	query :=
 		`SELECT id,username,password,security_question,security_answer FROM users where username=$1`
 	stmt, err := repository.db.Prepare(query)
 	if err != nil {
 		repository.logger.LogWithFields("error", "Failed to prepare sql query", zap.Error(err))
-		return identity.User{}, err
+		return &identity.User{}, err
 	}
 	defer stmt.Close()
 
 	var user identity.User
-	err = stmt.QueryRow(username).Scan(
+	switch err := stmt.QueryRow(username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Password,
 		&user.SecurityQuestion,
 		&user.SecurityAnswer,
-	)
-	if err != nil {
-
-		if errors.Is(err, sql.ErrNoRows) {
-			var userNotFoundErr = errors.New(fmt.Sprintf("user with username '%v' does not exit", username))
-			return identity.User{}, appError.NotFound(userNotFoundErr)
-		} else {
-			return identity.User{}, err
-		}
+	); {
+	case errors.Is(err, sql.ErrNoRows):
+		var userNotFoundErr = errors.New(fmt.Sprintf("user with username '%v' does not exit", username))
+		return &identity.User{}, appError.NotFound(userNotFoundErr)
+	case err == nil:
+		return &user, nil
+	default:
+		return &identity.User{}, err
 	}
-	return user, nil
 }
